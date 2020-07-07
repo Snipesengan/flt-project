@@ -31,23 +31,25 @@ def _main(args):
     for target in tqdm(args.target):
         # read
         image = cv2.imread(target, 0)
-        left, center, right = split_views(image)
 
         # detect & mask
-        faces = front_cascade.detectMultiScale(left)
-        face = filter_largest_rectangle(faces) 
-        res = mask_boxes(left, [face], invert=True)
+        for frame, view in zip(split_views(image), ['left', 'center', 'right']):
+            faces = front_cascade.detectMultiScale(frame)
+            face = filter_largest_rectangle(faces)
+            res = mask_boxes(frame, [face], invert=True)
 
-        # save
-        _, name = os.path.split(target)
-        cv2.imwrite(os.path.join(args.save,name), res)
+            # save
+            _, name = os.path.split(target)
+            name, ext = os.path.splitext(name)
+            outname = '{}_{}{}'.format(name, view, ext)
+            cv2.imwrite(os.path.join(args.save, outname), res)
 
 
 def _get_parser():
     parser = argparse.ArgumentParser(
-        description="Runs facial detection using Haar-Cascade")
+        description="CLI to runs facial detection using Haar-Cascade")
     parser.add_argument("target", type=str, nargs="+",help="path to image/s")
-    parser.add_argument("-s", "--save", type=str, default="/tmp",nargs=1,
+    parser.add_argument("-s", "--save", type=str, default="/tmp",nargs='?',
         help="output directory")
     return parser
 
