@@ -2,19 +2,21 @@ import cv2
 import numpy as np
 
 
-def split_views(image, l=1/3, r=2/3):
-    """Split image into 3 section vertically
+def split_views(image, left_segment=1/3, right_segment=2/3):
+    """Split image into 3 section vertically.
 
     Args:
         image (np.ndarray): image to be split
-        l (float, optional): first split, normalised. Defaults to 1/3.
-        r (float, optional): second split normalised. Defaults to 2/3.
+        left_semgent (float, optional): first split, normalised.
+                                        Defaults to 1/3.
+        right_segment (float, optional): second split normalised.
+                                        Defaults to 2/3.
 
-    Returns:
-        [type]: [description]
-    """
+        Returns:
+            Tuple[np.ndarrray]: Views for left, center and right.
+        """
     w = image.shape[1]
-    l, r = int(w * l), int(w * r)
+    l, r = int(w * left_segment), int(w * right_segment)
     return image[:, :l, ...], image[:, l:r, ...], image[:, r:, ...]
 
 
@@ -26,12 +28,16 @@ def draw_boxes(image, boxes):
 
 
 def mask_boxes(image, boxes, invert=False):
-    """Masks rectangular area in the image
+    """Masks rectangular area in the image.
 
     Args:
-        image (np.ndarray): Input image
-        boxes (List): List of (x1, y1, x2, y2)
+        image (np.ndarray): Input image.
+        boxes (List): List of (x1, y1, x2, y2).
         invert (bool, optional): Invert the masking. Defaults to True.
+
+
+        Returns:
+            np.ndarray: Masked image.
     """
 
     mask = np.zeros(image.shape[:2], dtype=np.uint8)
