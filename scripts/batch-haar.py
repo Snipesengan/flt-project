@@ -50,7 +50,7 @@ def _get_parser():
     parser = argparse.ArgumentParser(
         description="CLI to runs facial detection using Haar-Cascade")
     parser.add_argument("target", type=str, nargs="+", help="path to image/s")
-    parser.add_argument("-s", "--save", type=str, default="/tmp",nargs='?',
+    parser.add_argument("-s", "--save", type=str, default="/tmp", nargs='?',
                         help="output directory")
     return parser
 

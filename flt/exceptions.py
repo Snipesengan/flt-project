@@ -4,7 +4,3 @@ class ChessboardNotFoundError(Exception):
 
 class InconsistentCalibrationSizeError(Exception):
     """Performing calibration with varying calibration image size"""
-
-
-class CalibrationFolderExistsError(Exception):
-    """Calibration output folder already exists when trying to save"""

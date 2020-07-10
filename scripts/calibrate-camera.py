@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
+import argparse
 import os
 import time
-import argparse
 
 import cv2
+import numpy as np
 from tqdm import tqdm
 
 from flt.calibration import StereoCalibrator
@@ -22,29 +23,50 @@ def _main(args):
         return
 
     print("Detecting calibration pattern in images...")
-    for img_path in tqdm(args.calibration_images):
+    n_images = 0
+    frames = {'left': [], 'right': [], 'center': []}
+    for i, img_path in enumerate(tqdm(args.calibration_images)):
 
         img = cv2.imread(img_path)
-        left, center, right = split_views(img)
+        for frame, view in zip(split_views(img), frames.keys()):
+            frames[view].append(frame)
+
         try:
             if args.calib_side == 'left':
-                image_pair = (left, center)
+                image_pair = (frames['left'][i], frames['center'][i])
             elif args.calib_side == 'right':
-                image_pair = (right, center)
+                image_pair = (frames['right'][i], frames['center'][i])
 
             calib.add_corners(image_pair, args.display_corners)
+            n_images += 1
 
         except ChessboardNotFoundError:
-            print("No chessboard pattern found in {}".format(img_path))
+            pass
+            # print("No chessboard pattern found in {}".format(img_path))
 
+    print("Found {}/{} calibration patterns.".format(
+        n_images, len(args.calibration_images)))
     print("Calibrating stereo pair...")
     t1 = time.time()
     calibration = calib.calibrate_cameras()
     t2 = time.time()
     print("Time taken = {}s".format(t2 - t1))
-    calibration.save_dir(args.out_dir, True)
+    calibration.export(args.out_dir, True)
+    print(calibration)
 
+    if args.check_rectification:
+        if args.calib_side == 'left':
+            result = calibration.rectify(frames['left'],
+                                         frames['center'])
+        elif args.calib_side == 'right':
+            result = calibration.rectify(frames['right'],
+                                         frames['center'])
 
+        for frame1, frame2 in result:
+            cv2.imshow('rectified', np.hstack((frame1, frame2)))
+            cv2.waitKey(0)
+
+            
 def _get_parser():
 
     parser = argparse.ArgumentParser(
@@ -73,6 +95,8 @@ def _get_parser():
                         help="which side to calibrate")
     parser.add_argument("--display_corners", action='store_true',
                         help="display detected corners in images")
+    parser.add_argument("--check_rectification", action='store_true',
+                        help="display rectified frames")
     return parser
 
 
