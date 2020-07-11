@@ -4,6 +4,7 @@ import os
 import argparse
 
 import cv2
+import numpy as np
 from tqdm import tqdm
 
 from flt.utils import split_views, mask_boxes
@@ -21,6 +22,17 @@ def filter_largest_rectangle(rects):
 
 
 def _main(args):
+
+    def _get_mask_views(image):
+        views = ['left', 'center', 'right']
+        # detect & mask
+        for frame, view in zip(split_views(image), views):
+            faces = front_cascade.detectMultiScale(frame)
+            face = filter_largest_rectangle(faces)
+            res = mask_boxes(frame, [face], invert=True)
+
+            yield res
+
     if not os.path.isdir(args.save):
         raise OSError("save directory not found - {}".format(args.save))
 
@@ -28,22 +40,16 @@ def _main(args):
         cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
     )
 
-    views = ['left', 'center', 'right']
-
     for target in tqdm(args.target):
         # read
         image = cv2.imread(target, 0)  # open in gray-scale
+        mask_views = _get_mask_views(image)
+        res = np.hstack(tuple(mask_views))
 
-        # detect & mask
-        for frame, view in zip(split_views(image), views):
-            faces = front_cascade.detectMultiScale(frame)
-            face = filter_largest_rectangle(faces)
-            res = mask_boxes(frame, [face], invert=True)
-
-            # save
-            name = os.path.basename(target)
-            outfile = '{}_{}{}'.format(name, view, '.png')
-            cv2.imwrite(os.path.join(args.save, outfile), res)
+        # save
+        name = os.path.basename(target)
+        outfile = '{}_masked{}'.format(name, '.png')
+        cv2.imwrite(os.path.join(args.save, outfile), res)
 
 
 def _get_parser():
